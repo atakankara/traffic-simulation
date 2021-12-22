@@ -95,6 +95,8 @@ void *police_officer_function(){
         return 0; //different
     }
 
+
+
     else if(checkMoreThanFiveCar()){
         printf("@police there are more than 5 cars\n");
         currentLane = getTheMostCrowdedLane();
