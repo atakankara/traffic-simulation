@@ -5,6 +5,7 @@
 
 typedef struct Car{
     int id;
+    char direction;
     char arrival_time[8];
     char cross_time[8];
 } Car;
@@ -12,6 +13,7 @@ typedef struct Car{
 typedef struct Queue{
     Car cars[SIZE];
     char direction;
+    int carCount;
     int front;
     int rear; 
 } Queue;
