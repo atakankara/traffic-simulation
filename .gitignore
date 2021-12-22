@@ -55,3 +55,6 @@ cmake-build-debug
 CMakeLists.txt
 .idea
 .project
+a.out
+car.log
+police.log
