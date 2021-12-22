@@ -16,20 +16,44 @@ typedef struct Queue{
     char direction;
     int carCount;
     int front;
-    int rear; 
+    int rear;
 } Queue;
 
 
 void enqueue(Queue *queue, Car *car){
-    queue->rear = (queue->rear + 1) % SIZE;
-    queue->cars[queue->rear] = car;
-    queue->carCount++;
+    if (queue->rear == SIZE - 1)
+        printf("\nQueue is Full!!");
+    else {
+        if (queue->front == -1)
+            queue->front = 0;
+        queue->rear++;
+        queue->cars[queue->rear] = car;
+        queue->carCount ++;
+    }
 }
  
 Car* dequeue(Queue *queue)
 {
-    Car *car = queue->cars[queue->front];
-    queue->front = (queue->front + 1) % SIZE;
-    queue->carCount--;
+    Car *car;
+
+    if (queue->front == -1) {
+        printf("\nDeque is empty.\n");
+        return 0;
+    }
+
+    car = queue->cars[queue->front];
+    queue->cars[queue->front] = NULL;
+    (queue->front)++;
+    queue->carCount --;
+
+    if (queue->front > queue->rear)
+        queue->front = queue->rear = -1;
+
+
+
+//    return car;
+//    Car *car = queue->cars[queue->front];
+//    queue->front = (queue->front + 1) % SIZE;
+//    queue->carCount--;
     return car;
 }
