@@ -9,7 +9,7 @@
 
 
 char* getCurrentTime();
-
+void updateLogCarFile(Car *car);
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t laneConditions[4];
@@ -24,6 +24,10 @@ char currentLane = 0;
 
 char currentTimeString[8];
 int ID = 0;
+
+//initialize log file
+FILE *carLog;
+FILE *policeLog;
 
 int checkMoreThanFiveCar(){
     for(int i=0; i<4; i++){
@@ -54,25 +58,36 @@ int getTheMostCrowdedLane(){
     return lane;
 }
 
-void *lane(void* condition_ptr){
-    printf("At the begining of lane\n");
-    while(1){
-        pthread_mutex_lock(&lock);
-        pthread_cond_wait(condition_ptr, &lock);
-        //Implementation here
-        printf("Hello world\n");
+void printLanes(){
+    printf("\t%d\n", queues[0]->carCount);
+    printf("%d\t\t%d\n", queues[3]->carCount, queues[1]->carCount);
+    printf("\t%d\n", queues[2]->carCount);
+}
 
+void *lane(void *direction){
+    int i = (int) direction;
+    pthread_mutex_lock(&lock);
+
+    while(1){ 
+        pthread_cond_wait(&laneConditions[i], &lock);
+        
+        printf("@lane i:%d", i);
+        // printf("Before dequeue %d\n", queues[i]->carCount);
+        // // Car *car = dequeue(queues[i]);
+        // printf("After dequeue %d\n", queues[i]->carCount);
+
+        // updateLogCarFile(car);
         pthread_cond_signal(&iteration_finish_condition);
-        pthread_mutex_unlock(&lock);
+        // pthread_mutex_unlock(&lock);
     }
 }
 
 void *police_officer_function(){
     printf("At the begining of police\n");
+    pthread_mutex_lock(&lock);
+
     while(1){
 
-    pthread_mutex_lock(&lock);
-    printf("@police got the lock\n");
     pthread_cond_wait(&police_work_condition, &lock);
     printf("@police got the signal\n");
     if(checkIfAllLanesEmpty()){
@@ -102,7 +117,6 @@ void *police_officer_function(){
         printf("@police don't change line \n");
         pthread_cond_signal(&laneConditions[currentLane]);
     }
-        pthread_mutex_unlock(&lock);
     }
 }
 
@@ -133,11 +147,6 @@ Car *createCar(char direction) {
 }
 
 void addCar(double p) {
-
-    //implement car struct -
-    //implement queue struct -
-    //create cars with random probability  
-
     double Nprob = rand() % 100;
     double Sprob = rand() % 100;
     double Wprob = rand() % 100;
@@ -163,7 +172,6 @@ void addCar(double p) {
     {
         enqueue(queues[3], createCar('W'));
     }
-
 }
 
 void initializeLaneQueues() {
@@ -199,6 +207,7 @@ void initializeLaneQueues() {
     enqueue(queues[3], createCar('W'));
 
 }
+
 int getWaitTime(Car *car){
     int waitTime = 0;
     char delim[] = ":";
@@ -226,9 +235,6 @@ void updateLogCarFile(Car *car){
     sprintf(logMsg, "%d\t%c\t%s\t%s\t%d", car->id, car->direction, car->arrival_time, car->cross_time, getWaitTime(car));
     fprintf(carLog, "%s", logMsg);
 }
-//void updateLogPoliceFile(){
-//
-//}
 
 char* getCurrentTime(){
     time_t rawtime;
@@ -261,9 +267,7 @@ int main(int argc, char const *argv[]){
 
         //set seed
         srand(seed);
-    //initialize log file
-    FILE *carLog;
-    FILE *policeLog;
+
     carLog = fopen("car.log", "w");
     policeLog = fopen("police.log", "w");
     if(carLog == NULL && policeLog == NULL)
@@ -295,7 +299,7 @@ int main(int argc, char const *argv[]){
 
 
     for(int i=0; i<4; i++){
-        pthread_create(&lane_threads[0], NULL, lane, (void *) &laneConditions[i]);
+        pthread_create(&lane_threads[0], NULL, lane, (void *) i);
     }
 
     pthread_create(&police_officer_thread, NULL, police_officer_function, NULL);
@@ -310,14 +314,14 @@ int main(int argc, char const *argv[]){
         printf("@main got the lock\n");
         pthread_cond_signal(&police_work_condition);
         printf("@main send signal to the police.\n");
-        pthread_mutex_unlock(&lock);
 
-        pthread_mutex_lock(&lock);
         printf("@main waiting for the finish_condition signal \n");
         pthread_cond_wait(&iteration_finish_condition, &lock);
         addCar(prob);
         printf("At the end of the iteration %d\n", i);
         i++;
+        printLanes();
+
         pthread_mutex_unlock(&lock);
 }
 
