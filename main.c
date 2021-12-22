@@ -22,8 +22,6 @@ Queue *queues[4]; // {N, E, S, W}
 
 char currentLane = 0;
 
-FILE *carLog;
-FILE *policeLog;
 char currentTimeString[8];
 int ID = 0;
 
@@ -81,7 +79,7 @@ void *police_officer_function(){
         printf("@police all lanes are empty\n");
         pthread_cond_signal(&iteration_finish_condition);
         pthread_mutex_unlock(&lock);
-        return 0;
+        return;
     }
 
     if(checkMoreThanFiveCar()){
@@ -104,8 +102,8 @@ void *police_officer_function(){
         printf("@police don't change line \n");
         pthread_cond_signal(&laneConditions[currentLane]);
     }
+        pthread_mutex_unlock(&lock);
     }
-    pthread_mutex_unlock(&lock);
 }
 
 Car *createCar(char direction) {
@@ -184,33 +182,6 @@ void initializeLaneQueues() {
     enqueue(queues[3], createCar('W'));
 
 }
-int getWaitTime(Car *car){
-    int waitTime = 0;
-    char delim[] = ":";
-
-    int arrival_h = atoi(strtok(car->arrival_time, delim));
-    int arrival_m = atoi(strtok(NULL, delim));
-    int arrival_s = atoi(strtok(NULL, delim));
-
-    int cross_h = atoi(strtok(car->cross_time, delim));
-    int cross_m = atoi(strtok(NULL, delim));
-    int cross_s = atoi(strtok(NULL, delim));
-
-    int h = cross_h - arrival_h;
-    int m = cross_m - arrival_m;
-    int s = cross_s - arrival_s;
-
-    waitTime = h * 3600 + m * 60 + s;
-
-    return waitTime;
-}
-
-void updateLogFile(Car *car){
-    //Add car to log file //CarID Direction Arrival-Time Cross-Time Wait-Time
-    char logMsg[100];
-    sprintf(logMsg, "%d\t%c\t%s\t%s\t%s", car->id, car->direction, car->arrival_time, car->cross_time, getWaitTime(car));
-    fprintf(carLog, "%s", logMsg);
-}
 
 char* getCurrentTime(){
     time_t rawtime;
@@ -244,7 +215,8 @@ int main(int argc, char const *argv[]){
         //set seed
         srand(seed);
     //initialize log file
-
+    FILE *carLog;
+    FILE *policeLog;
     carLog = fopen("car.log", "w");
     policeLog = fopen("police.log", "w");
     if(carLog == NULL && policeLog == NULL)
@@ -281,7 +253,7 @@ int main(int argc, char const *argv[]){
 
     pthread_create(&police_officer_thread, NULL, police_officer_function, NULL);
 
-    sleep(1); //give chance processes to get initialized.
+    sleep(2); //give chance processes to get initialized.
 
     int i=0;
     while(i <= simulationTime){
@@ -299,6 +271,7 @@ int main(int argc, char const *argv[]){
         addCar(prob);
         printf("At the end of the iteration %d\n", i);
         i++;
+        pthread_mutex_unlock(&lock);
 }
 
     return 0;
