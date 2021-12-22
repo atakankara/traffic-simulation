@@ -73,13 +73,16 @@ void *lane(void *direction){
     while(1){
         pthread_cond_wait(&laneConditions[i], &lock);
 
-        printf("@lane i:%d", i);
-        printf("Before dequeue %d\n", queues[i]->carCount);
-        Car *car = dequeue(queues[i]);
-        strcpy(car->cross_time, getCurrentTime());
-        updateLogCarFile(car);
-//        printf("DEQUEUE'S")
-         printf("After dequeue %d\n", queues[i]->carCount);
+        if(cell_phone_delay !=0){
+            pthread_cond_signal(&horn_condition);
+            updateLogPoliceFile("Honk");
+            pthread_sleep(1);
+        }else{
+            Car *car = dequeue(queues[i]);
+            pthread_sleep(1);
+            strcpy(car->cross_time, getCurrentTime());
+            updateLogCarFile(car);
+        }
 
         // updateLogCarFile(car);
         pthread_cond_signal(&iteration_finish_condition);
@@ -139,14 +142,17 @@ void *police_officer_function(){
     if(checkIfAllLanesEmpty()){
         printf("@police all lanes are empty\n");
         cell_phone_delay = 3;
+        pthread_sleep(1);
+        updateLogPoliceFile("Cell Phone");
         pthread_cond_signal(&iteration_finish_condition);
     }
 
     if (cell_phone_delay != 0){
         printf("sleeping, cell_phone_delay:%d\n", cell_phone_delay);
+        currentLane = getTheMostCrowdedLane();
+        pthread_cond_signal(currentLane);
+        pthread_cond_wait(&horn_condition, &lock);
         cell_phone_delay--;
-        pthread_cond_signal(&iteration_finish_condition);
-
     }else {
         int delayedLane = checkCarsWaitTime();
         if (delayedLane != -1) {
@@ -217,20 +223,20 @@ void addCar(double p) {
     p = p*100;
 
     Car *car;
-    if (Nprob > p)
+    if (Nprob >= p)
     {
         enqueue(queues[0], createCar('N')); //Todo: keep track of 20 sec and add it definatly after that
     } 
 
-    if (Eprob <= p)
+    if (Eprob < p)
     {
         enqueue(queues[1], createCar('E'));
     }
-    if (Sprob <= p)
+    if (Sprob < p)
     {
         enqueue(queues[2], createCar('S'));
     }
-    if (Wprob <= p)
+    if (Wprob < p)
     {
         enqueue(queues[3], createCar('W'));
     }
@@ -301,6 +307,12 @@ void updateLogCarFile(Car *car){
     fprintf(carLog, "%s", logMsg);
 }
 
+void updateLogPoliceFile(char *message){
+    char logMsg[100];
+    sprintf(logMsg, "%s\t%s\n", getCurrentTime(), message);
+    fprintf(policeLog, "%s", logMsg);
+}
+
 char* getCurrentTime(){
     time_t rawtime;
     struct tm * timeinfo;
@@ -364,7 +376,6 @@ int main(int argc, char const *argv[]){
 //    fprintf(policeLog,"-----------------------------------------------------------------------------------------------\n");
     initializeLogFiles();
     initializeLaneQueues();
-    printf("Size of the first queue:%d\n", queues[0]->carCount);
 
     pthread_t police_officer_thread;
 
@@ -389,17 +400,11 @@ int main(int argc, char const *argv[]){
 
     sleep(2); //give chance processes to get initialized.
 
-    
     while(relative_time <= simulationTime){
-        printf("At the begining of the iteration %d\n", relative_time);
-
         pthread_mutex_lock(&lock);
-        printf("@main got the lock\n");
         pthread_cond_signal(&police_work_condition);
-        printf("@main send signal to the police.\n");
-
-        printf("@main waiting for the finish_condition signal \n");
         pthread_cond_wait(&iteration_finish_condition, &lock);
+        printLanes();
         addCar(prob);
         printf("At the end of the iteration %d\n", relative_time);
         relative_time++;
