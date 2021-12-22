@@ -22,7 +22,8 @@ pthread_cond_t police_work_condition;
 pthread_t lane_threads[4];
 
 Queue *queues[4]; // {N, E, S, W}
-
+FILE *carLog;
+FILE *policeLog;
 char currentTimeString[8];
 int ID = 0;
 
@@ -86,6 +87,8 @@ Car *createCar(char direction) {
     default:
         break;
     }
+
+
     return car;
 }
 
@@ -139,6 +142,12 @@ void initializeLaneQueues() {
     enqueue(queues[3], createCar('W'));
 
 }
+void updateLogFile(Car *car){
+    //Add car to log file //CarID Direction Arrival-Time Cross-Time Wait-Time
+    char logMsg[100];
+    sprintf(logMsg, "%d\t%c\t%s\t%s\t%s", car->id, car->direction, car->arrival_time, car->cross_time, car->wait_time);
+    fprintf(carLog, logMsg);
+}
 
 char* getCurrentTime(){
     time_t rawtime;
@@ -149,6 +158,9 @@ char* getCurrentTime(){
 
     sprintf(currentTimeString, "%d:%d:%d", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
     return currentTimeString;
+}
+int getWaitTime(Car *car){
+
 }
 
 
@@ -172,8 +184,7 @@ int main(int argc, char const *argv[]){
         //set seed
         srand(seed);
     //initialize log file
-    FILE *carLog;
-    FILE *policeLog;
+
     carLog = fopen("car.log", "w");
     policeLog = fopen("police.log", "w");
     if(carLog == NULL && policeLog == NULL)
