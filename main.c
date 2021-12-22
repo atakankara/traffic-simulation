@@ -79,6 +79,40 @@ void *lane(void *direction){
         // pthread_mutex_unlock(&lock);
     }
 }
+int getQueueWaitTime(Car *car) {
+    int waitTime = 0;
+    char delim[] = ":";
+
+    int arrival_h = atoi(strtok(car->arrival_time, delim));
+    int arrival_m = atoi(strtok(NULL, delim));
+    int arrival_s = atoi(strtok(NULL, delim));
+
+    char time [8];
+    strcpy(time, getCurrentTime());
+    int wait_h = atoi(strtok(time, delim));
+    int wait_m = atoi(strtok(NULL, delim));
+    int wait_s = atoi(strtok(NULL, delim));
+
+    int h = wait_h - arrival_h;
+    int m = wait_m - arrival_m;
+    int s = wait_s - arrival_s;
+
+    waitTime = h * 3600 + m * 60 + s;
+
+    return waitTime;
+}
+int checkCarsWaitTime() {
+
+    for(int i=0; i<4; i++){
+        for(int j = 0; j< queues[i]->carCount; j++){
+            int d = getQueueWaitTime(queues[i]->cars[j]);
+            if (d >= 20) {
+                return i;
+            }
+        }
+    }
+    return -1;
+}
 
 void *police_officer_function(){
     printf("At the begining of police\n");
@@ -94,7 +128,11 @@ void *police_officer_function(){
     }
 
 
-
+        int delayedLane = checkCarsWaitTime();
+        if (delayedLane != -1) {
+            currentLane = delayedLane;
+            pthread_cond_signal(&laneConditions[currentLane]);
+        }
     else if(checkMoreThanFiveCar()){
         printf("@police there are more than 5 cars\n");
         currentLane = getTheMostCrowdedLane();
