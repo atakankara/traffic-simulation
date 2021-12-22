@@ -29,7 +29,7 @@ int ID = 0;
 
 int checkMoreThanFiveCar(){
     for(int i=0; i<4; i++){
-        if(queues[0]->carCount >= 5){
+        if(queues[i]->carCount >= 5){
             return 1;
         }
     }
@@ -72,6 +72,9 @@ void *lane(void *direction){
         printf("@lane i:%d", i);
         printf("Before dequeue %d\n", queues[i]->carCount);
         Car *car = dequeue(queues[i]);
+        strcpy(car->cross_time, getCurrentTime());
+        updateLogCarFile(car);
+        printf("DEQUEUE'S")
          printf("After dequeue %d\n", queues[i]->carCount);
 
         // updateLogCarFile(car);
@@ -82,12 +85,13 @@ void *lane(void *direction){
 int getQueueWaitTime(Car *car) {
     int waitTime = 0;
     char delim[] = ":";
-
-    int arrival_h = atoi(strtok(car->arrival_time, delim));
+    char t[9];
+    strcpy(t, car->arrival_time);
+    int arrival_h = atoi(strtok(t, delim));
     int arrival_m = atoi(strtok(NULL, delim));
     int arrival_s = atoi(strtok(NULL, delim));
 
-    char time [8];
+    char time [9];
     strcpy(time, getCurrentTime());
     int wait_h = atoi(strtok(time, delim));
     int wait_m = atoi(strtok(NULL, delim));
@@ -104,12 +108,18 @@ int getQueueWaitTime(Car *car) {
 int checkCarsWaitTime() {
 
     for(int i=0; i<4; i++){
-        for(int j = 0; j< queues[i]->carCount; j++){
-            int d = getQueueWaitTime(queues[i]->cars[j]);
-            if (d >= 20) {
-                return i;
+        if(queues[i]->carCount != 0){
+            for(int j = 0; j< queues[i]->carCount; j++){
+                if (queues[i]->cars[j] != NULL){
+                    int d = getQueueWaitTime(queues[i]->cars[j]);
+                    if (d >= 20) {
+                        return i;
+                    }
+                }
+
             }
         }
+
     }
     return -1;
 }
@@ -276,7 +286,7 @@ int getWaitTime(Car *car){
 void updateLogCarFile(Car *car){
     //Add car to log file //CarID Direction Arrival-Time Cross-Time Wait-Time
     char logMsg[100];
-    sprintf(logMsg, "%d\t%c\t%s\t%s\t%d", car->id, car->direction, car->arrival_time, car->cross_time, getWaitTime(car));
+    sprintf(logMsg, "%d\t%c\t%s\t%s\t%d\n", car->id, car->direction, car->arrival_time, car->cross_time, getWaitTime(car));
     fprintf(carLog, "%s", logMsg);
 }
 
