@@ -24,7 +24,7 @@ char currentLane = 0;
 
 FILE *carLog;
 FILE *policeLog;
-char currentTimeString[8];
+char currentTimeString[10];
 int ID = 0;
 
 int checkMoreThanFiveCar(){
@@ -82,22 +82,28 @@ int checkCarsWaitTime() {
 
     for(int i=0; i<4; i++){
         for(int j = 0; j< queues[i]->carCount; j++){
-            int d = getQueueWaitTime(queues[i]->cars[j]);
-            if (d >= 20) {
-                return i;
+            if(queues[i]->cars[j] != NULL){
+                int d = getQueueWaitTime(queues[i]->cars[j]);
+                if (d >= 20) {
+                    return i;
+                }
             }
         }
     }
     return -1;
 }
 
-void *lane(void* condition_ptr){
+void *lane(void* direction){
+
+    int i = (int *) direction;
     printf("At the beginning of lane\n");
     while(1){
         pthread_mutex_lock(&lock);
-        pthread_cond_wait(condition_ptr, &lock);
+        pthread_cond_wait(&laneConditions[i], &lock);
         //Implementation here
-        printf("Hello world\n");
+        printf("Before dequeueu %d\n", queues[i]->carCount);
+        Car *car = dequeue(queues[i]);
+        printf("AFter dequeue %d\n", queues[i]->carCount);
 
         pthread_cond_signal(&iteration_finish_condition);
         pthread_mutex_unlock(&lock);
@@ -116,13 +122,13 @@ void *police_officer_function(){
         printf("@police all lanes are empty\n");
         pthread_cond_signal(&iteration_finish_condition);
         pthread_mutex_unlock(&lock);
-        return 0;
+        return 0; //Different than ATakan
     }
-    int delayedLane = checkCarsWaitTime();
-    if (delayedLane != -1) {
-            currentLane = delayedLane;
-            pthread_cond_signal(&laneConditions[currentLane]);
-    }
+//    int delayedLane = checkCarsWaitTime();
+//    if (delayedLane != -1) {
+//            currentLane = delayedLane;
+//            pthread_cond_signal(&laneConditions[currentLane]);
+//    }
 
     else if(checkMoreThanFiveCar()){
         printf("@police there are more than 5 cars\n");
@@ -144,13 +150,13 @@ void *police_officer_function(){
         printf("@police don't change line \n");
         pthread_cond_signal(&laneConditions[currentLane]);
     }
-
+        pthread_mutex_unlock(&lock);
     }
-    pthread_mutex_unlock(&lock);
 }
 
 Car *createCar(char direction) {
     Car *car = (struct Car*) malloc(sizeof(Car));
+
     ID++;
     car->id = ID;
     strcpy(car->arrival_time, getCurrentTime());
@@ -306,20 +312,20 @@ int main(int argc, char const *argv[]){
     // Args: -s timeLog(arg1) simulationTime(arg2) probability(arg3) seed(arg4)
 
     //simulationTime
-
     int simulationTime = 0;
     simulationTime = atoi(argv[2]);
 
-        //get probability
-        double prob = 0.0;
-        prob = atof(argv[3]);
+    //get probability
+    double prob = 0.0;
+    prob = atof(argv[3]);
 
-        //get seed
-        int seed = 0;
-        seed = atoi(argv[4]);
 
-        //set seed
-        srand(seed);
+    //get seed
+    int seed = 0;
+    seed = atoi(argv[4]);
+
+    //set seed
+    srand(seed);
 
     initializeLogFiles();
     initializeLaneQueues();
@@ -340,16 +346,16 @@ int main(int argc, char const *argv[]){
 
 
     for(int i=0; i<4; i++){
-        pthread_create(&lane_threads[0], NULL, lane, (void *) &laneConditions[i]);
+        pthread_create(&lane_threads[0], NULL, lane, (void *) i);
     }
 
     pthread_create(&police_officer_thread, NULL, police_officer_function, NULL);
 
-    sleep(1); //give chance processes to get initialized.
+    sleep(2); //give chance processes to get initialized.
 
     int i=0;
     while(i <= simulationTime){
-        printf("At the beginning of the iteration %d\n", i);
+        printf("At the begining of the iteration %d\n", i);
 
         pthread_mutex_lock(&lock);
         printf("@main got the lock\n");
