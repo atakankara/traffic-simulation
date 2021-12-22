@@ -134,15 +134,12 @@ int checkCarsWaitTime() {
 }
 
 void *police_officer_function(){
-    printf("At the begining of police\n");
     pthread_mutex_lock(&lock);
 
     while(1){
 
     pthread_cond_wait(&police_work_condition, &lock);
-    printf("@police got the signal\n");
     if(checkIfAllLanesEmpty()){
-        printf("@police all lanes are empty\n");
         cell_phone_delay = 3;
         pthread_sleep(1);
         updateLogPoliceFile("Cell Phone");
@@ -150,7 +147,6 @@ void *police_officer_function(){
     }
 
     if (cell_phone_delay != 0){
-        printf("sleeping, cell_phone_delay:%d\n", cell_phone_delay);
         currentLane = getTheMostCrowdedLane();
         pthread_cond_signal(&laneConditions[currentLane]);
         pthread_cond_wait(&horn_condition, &lock);
@@ -162,12 +158,10 @@ void *police_officer_function(){
             pthread_cond_signal(&laneConditions[currentLane]);
         }
         else if(checkMoreThanFiveCar()){
-            printf("@police there are more than 5 cars\n");
             currentLane = getTheMostCrowdedLane();
             pthread_cond_signal(&laneConditions[currentLane]);
 
         }else if(queues[currentLane]->carCount == 0){
-            printf("@police there aren\'t more than 5 cars\n");
             //N>E>S>W
             for(int i=0; i<4; i++){
                 if(queues[i]->carCount != 0){
@@ -178,7 +172,6 @@ void *police_officer_function(){
             }
         }else{
             //don't change current line
-            printf("@police don't change line \n");
             pthread_cond_signal(&laneConditions[currentLane]);
         }
     }
