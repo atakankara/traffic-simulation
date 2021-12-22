@@ -51,6 +51,7 @@ int getTheMostCrowdedLane(){
     for(int i=3; i>=0; i--){
         if(queues[i]->carCount >= currentCount){
             lane = i;
+            currentCount = queues[i]->carCount;
         }
     }
     return lane;
