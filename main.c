@@ -20,7 +20,7 @@ pthread_t lane_threads[4];
 
 Queue *queues[4]; // {N, E, S, W}
 
-char currentLane = 'N';
+char currentLane = 0;
 
 char currentTimeString[8];
 int ID = 0;
@@ -34,13 +34,13 @@ int checkMoreThanFiveCar(){
     return 0;
 }
 
-int checkIfAllLinesEmpty(){
+int checkIfAllLanesEmpty(){
     for(int i=0; i<4; i++){
         if(queues[0]->carCount > 0){
-            return 1;
+            return 0;
         }
     }
-    return 0;
+    return 1;
 }
 
 int getTheMostCrowdedLane(){
@@ -55,30 +55,40 @@ int getTheMostCrowdedLane(){
 }
 
 void *lane(void* condition_ptr){
-    pthread_mutex_lock(&lock);
-    pthread_cond_wait(condition_ptr, &lock);
-    //Implementation here
-    printf("Hello world\n");
+    printf("At the begining of lane\n");
+    while(1){
+        pthread_mutex_lock(&lock);
+        pthread_cond_wait(condition_ptr, &lock);
+        //Implementation here
+        printf("Hello world\n");
 
-    pthread_cond_signal(&iteration_finish_condition);
-    pthread_mutex_unlock(&lock);
-    
+        pthread_cond_signal(&iteration_finish_condition);
+        pthread_mutex_unlock(&lock);
+    }
 }
 
 void *police_officer_function(){
-    pthread_mutex_lock(&lock);
-    pthread_cond_wait(&police_work_condition, &lock);
+    printf("At the begining of police\n");
+    while(1){
 
-    if(checkIfAllLinesEmpty()){
+    pthread_mutex_lock(&lock);
+    printf("@police got the lock\n");
+    pthread_cond_wait(&police_work_condition, &lock);
+    printf("@police got the signal\n");
+    if(checkIfAllLanesEmpty()){
+        printf("@police all lanes are empty\n");
+        pthread_cond_signal(&iteration_finish_condition);
         pthread_mutex_unlock(&lock);
         return;
     }
 
     if(checkMoreThanFiveCar()){
+        printf("@police there are more than 5 cars\n");
         currentLane = getTheMostCrowdedLane();
         pthread_cond_signal(&laneConditions[currentLane]);
 
     }else if(queues[currentLane]->carCount == 0){
+        printf("@police there aren\'t more than 5 cars\n");
         //N>E>S>W
         for(int i=0; i<4; i++){
             if(queues[i]->carCount != 0){
@@ -89,10 +99,11 @@ void *police_officer_function(){
         }
     }else{
         //don't change current line
+        printf("@police don't change line \n");
         pthread_cond_signal(&laneConditions[currentLane]);
     }
+    }
     pthread_mutex_unlock(&lock);
-
 }
 
 Car *createCar(char direction) {
@@ -219,7 +230,8 @@ int main(int argc, char const *argv[]){
     fprintf(policeLog,"Time\tEvent\n");
     fprintf(policeLog,"-----------------------------------------------------------------------------------------------\n");
 
-
+    initializeLaneQueues();
+    printf("Size of the first queue:%d\n", queues[0]->carCount);
 
     pthread_t police_officer_thread;
 
@@ -241,17 +253,24 @@ int main(int argc, char const *argv[]){
 
     pthread_create(&police_officer_thread, NULL, police_officer_function, NULL);
 
+    sleep(1); //give chance processes to get initialized.
+
     int i=0;
     while(i <= simulationTime){
+        printf("At the begining of the iteration %d\n", i);
+
         pthread_mutex_lock(&lock);
+        printf("@main got the lock\n");
         pthread_cond_signal(&police_work_condition);
+        printf("@main send signal to the police.\n");
         pthread_mutex_unlock(&lock);
 
         pthread_mutex_lock(&lock);
+        printf("@main waiting for the finish_condition signal \n");
         pthread_cond_wait(&iteration_finish_condition, &lock);
         addCar(prob);
+        printf("At the end of the iteration %d\n", i);
         i++;
-        printf("On iteration %d\n", i);
 }
 
     return 0;
