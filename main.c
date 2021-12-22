@@ -208,7 +208,6 @@ void addCar(double p) {
 
     p = p*100;
 
-    Car *car;
     if (Nprob > p)
     {
         enqueue(queues[0], createCar('N')); //Todo: keep track of 20 sec and add it definatly after that
