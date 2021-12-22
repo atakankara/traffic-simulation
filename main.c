@@ -29,7 +29,8 @@ char currentTimeString[10];
 int ID = 0;
 int cell_phone_delay = 0;
 int relative_time = 0;
-
+int north_timer = 0; //Used to check 20 second rule for north lane.
+int north_sleep_flag=0;
 int checkMoreThanFiveCar(){
     for(int i=0; i<4; i++){
         if(queues[i]->carCount >= 5){
@@ -133,13 +134,11 @@ int checkCarsWaitTime() {
 }
 
 void *police_officer_function(){
-    printf("At the begining of police\n");
     pthread_mutex_lock(&lock);
 
     while(1){
 
     pthread_cond_wait(&police_work_condition, &lock);
-    printf("@police got the signal\n");
     if(checkIfAllLanesEmpty()){
         printf("@police all lanes are empty\n");
         cell_phone_delay = 3;
@@ -161,12 +160,10 @@ void *police_officer_function(){
             pthread_cond_signal(&laneConditions[currentLane]);
         }
         else if(checkMoreThanFiveCar()){
-            printf("@police there are more than 5 cars\n");
             currentLane = getTheMostCrowdedLane();
             pthread_cond_signal(&laneConditions[currentLane]);
 
         }else if(queues[currentLane]->carCount == 0){
-            printf("@police there aren\'t more than 5 cars\n");
             //N>E>S>W
             for(int i=0; i<4; i++){
                 if(queues[i]->carCount != 0){
@@ -177,7 +174,6 @@ void *police_officer_function(){
             }
         }else{
             //don't change current line
-            printf("@police don't change line \n");
             pthread_cond_signal(&laneConditions[currentLane]);
         }
     }
@@ -224,10 +220,21 @@ void addCar(double p) {
     p = p*100;
 
     Car *car;
-    if (Nprob >= p)
-    {
-        enqueue(queues[0], createCar('N')); //Todo: keep track of 20 sec and add it definatly after that
-    } 
+
+    if(!north_sleep_flag){
+        if (Nprob >= p){
+        enqueue(queues[0], createCar('N')); 
+        }else{
+            north_sleep_flag = 1;
+            north_timer = relative_time + 20;
+        }
+    }else {
+        if (north_timer == relative_time){
+            north_sleep_flag = 0;
+            enqueue(queues[0], createCar('N')); 
+        }
+    }
+
 
     if (Eprob < p)
     {
@@ -348,7 +355,7 @@ void initializeLogFiles(){
 
 int main(int argc, char const *argv[]){
     pthread_t lane_queues[4];
-    // Args: -s timeLog(arg1) simulationTime(arg2) probability(arg3) seed(arg4)
+    // Args: -s timeLog(arg1) simulationTime(arg2) probability(arg3) seed(arg4) snapshot(arg5)
 
     //simulationTime
 
@@ -363,12 +370,14 @@ int main(int argc, char const *argv[]){
         int seed = 0;
         seed = atoi(argv[4]);
 
+        //get t for snapshot 
+        int snapshot_time = atoi(argv[5]);
+
         //set seed
         srand(seed);
 
     initializeLogFiles();
     initializeLaneQueues();
-    printf("Size of the first queue:%d\n", queues[0]->carCount);
 
     pthread_t police_officer_thread;
 
@@ -395,17 +404,15 @@ int main(int argc, char const *argv[]){
 
     while(relative_time <= simulationTime){
         pthread_mutex_lock(&lock);
-        printf("@main got the lock\n");
         pthread_cond_signal(&police_work_condition);
-        printf("@main send signal to the police.\n");
 
-        printf("@main waiting for the finish_condition signal \n");
         pthread_cond_wait(&iteration_finish_condition, &lock);
-        printLanes();
         addCar(prob);
-        printf("At the end of the iteration %d\n", relative_time);
         relative_time++;
-        printLanes();
+
+        if(snapshot_time < relative_time){
+            printLanes();
+        }
 
         pthread_mutex_unlock(&lock);
 }
