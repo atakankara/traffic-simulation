@@ -16,6 +16,7 @@ pthread_cond_t laneConditions[4];
 
 pthread_cond_t iteration_finish_condition;
 pthread_cond_t police_work_condition;
+pthread_cond_t horn_condition;
 pthread_t lane_threads[4];
 
 Queue *queues[4]; // {N, E, S, W}
@@ -26,10 +27,12 @@ FILE *carLog;
 FILE *policeLog;
 char currentTimeString[10];
 int ID = 0;
+int cell_phone_delay = 0;
+int relative_time = 0;
 
 int checkMoreThanFiveCar(){
     for(int i=0; i<4; i++){
-        if(queues[0]->carCount >= 5){
+        if(queues[i]->carCount >= 5){
             return 1;
         }
     }
@@ -87,7 +90,7 @@ int getQueueWaitTime(Car *car) {
     int arrival_m = atoi(strtok(NULL, delim));
     int arrival_s = atoi(strtok(NULL, delim));
 
-    char time [8];
+    char time [9];
     strcpy(time, getCurrentTime());
     int wait_h = atoi(strtok(time, delim));
     int wait_m = atoi(strtok(NULL, delim));
@@ -124,34 +127,41 @@ void *police_officer_function(){
     printf("@police got the signal\n");
     if(checkIfAllLanesEmpty()){
         printf("@police all lanes are empty\n");
+        cell_phone_delay = 3;
         pthread_cond_signal(&iteration_finish_condition);
     }
 
+    if (cell_phone_delay != 0){
+        printf("sleeping, cell_phone_delay:%d\n", cell_phone_delay);
+        cell_phone_delay--;
+        pthread_cond_signal(&iteration_finish_condition);
 
+    }else {
         int delayedLane = checkCarsWaitTime();
         if (delayedLane != -1) {
             currentLane = delayedLane;
             pthread_cond_signal(&laneConditions[currentLane]);
         }
-    else if(checkMoreThanFiveCar()){
-        printf("@police there are more than 5 cars\n");
-        currentLane = getTheMostCrowdedLane();
-        pthread_cond_signal(&laneConditions[currentLane]);
+        else if(checkMoreThanFiveCar()){
+            printf("@police there are more than 5 cars\n");
+            currentLane = getTheMostCrowdedLane();
+            pthread_cond_signal(&laneConditions[currentLane]);
 
-    }else if(queues[currentLane]->carCount == 0){
-        printf("@police there aren\'t more than 5 cars\n");
-        //N>E>S>W
-        for(int i=0; i<4; i++){
-            if(queues[i]->carCount != 0){
-                currentLane=i;
-                pthread_cond_signal(&laneConditions[currentLane]);
-                break;
+        }else if(queues[currentLane]->carCount == 0){
+            printf("@police there aren\'t more than 5 cars\n");
+            //N>E>S>W
+            for(int i=0; i<4; i++){
+                if(queues[i]->carCount != 0){
+                    currentLane=i;
+                    pthread_cond_signal(&laneConditions[currentLane]);
+                    break;
+                }
             }
+        }else{
+            //don't change current line
+            printf("@police don't change line \n");
+            pthread_cond_signal(&laneConditions[currentLane]);
         }
-    }else{
-        //don't change current line
-        printf("@police don't change line \n");
-        pthread_cond_signal(&laneConditions[currentLane]);
     }
     }
 }
@@ -356,6 +366,7 @@ int main(int argc, char const *argv[]){
 
     pthread_cond_init(&police_work_condition, NULL);
     pthread_cond_init(&iteration_finish_condition, NULL);
+    pthread_cond_init(&horn_condition, NULL);
 
 
 
@@ -367,9 +378,9 @@ int main(int argc, char const *argv[]){
 
     sleep(2); //give chance processes to get initialized.
 
-    int i=0;
-    while(i <= simulationTime){
-        printf("At the begining of the iteration %d\n", i);
+    
+    while(relative_time <= simulationTime){
+        printf("At the begining of the iteration %d\n", relative_time);
 
         pthread_mutex_lock(&lock);
         printf("@main got the lock\n");
@@ -379,8 +390,8 @@ int main(int argc, char const *argv[]){
         printf("@main waiting for the finish_condition signal \n");
         pthread_cond_wait(&iteration_finish_condition, &lock);
         addCar(prob);
-        printf("At the end of the iteration %d\n", i);
-        i++;
+        printf("At the end of the iteration %d\n", relative_time);
+        relative_time++;
         printLanes();
 
         pthread_mutex_unlock(&lock);
