@@ -14,11 +14,17 @@ int main(int argc, char const *argv[]){
         time = atoi(argv[2]);
 
         //get probability
-        float prob = 0.0;
+        double prob = 0.0;
         prob = atof(argv[3]);
 
         //get seed
         int seed = 0;
+        seed = atoi(argv[4]);
+
+        //set seed
+        srand(seed);
+
+        
 
     for(int i=0; i<4; i++){
         pthread_create(&lane_queues[i], NULL, print_hello, (void*) i);
@@ -35,3 +41,4 @@ void *print_hello(void *ptr){
     pthread_sleep(sleep);
     printf("%s%d\n", "hello", sleep);
 }
+
