@@ -117,6 +117,7 @@ int checkCarsWaitTime() {
     for(int i=0; i<4; i++){
 
             for(int j = queues[i]->front; j<= queues[i]->rear; j++){
+                if (queues[i]->front == -1 || queues[i]->rear == -1) continue;
                 if (queues[i]->cars[j] != NULL){
                     int d = getQueueWaitTime(queues[i]->cars[j]);
                     if (d >= 20) {
@@ -156,7 +157,6 @@ void *police_officer_function(){
     }else {
         int delayedLane = checkCarsWaitTime();
         if (delayedLane != -1) {
-            checkCarsWaitTime();
             currentLane = delayedLane;
             pthread_cond_signal(&laneConditions[currentLane]);
         }
