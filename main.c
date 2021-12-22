@@ -38,7 +38,7 @@ int checkMoreThanFiveCar(){
 
 int checkIfAllLanesEmpty(){
     for(int i=0; i<4; i++){
-        if(queues[0]->carCount > 0){
+        if(queues[i]->carCount > 0){
             return 0;
         }
     }
