@@ -2,6 +2,7 @@
 #include <pthread.h>
 #include "pthread_sleep.c"
 #include "utils.c"
+#include <time.h>
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t north_pass_condition;
@@ -11,6 +12,12 @@ pthread_cond_t west_pass_condition;
 
 pthread_cond_t iteration_finish_condition;
 pthread_t lane_threads[4];
+Queue queueN;
+Queue queueS;
+Queue queueE;
+Queue queueW;
+time_t Time;
+int ID = 0;
 
 void *lane(void* condition_ptr){
     pthread_mutex_lock(&lock);
@@ -44,6 +51,105 @@ void *police_officer_function(){
     pthread_mutex_unlock(&lock);
     sleep(1);
 }
+Car *createCar(char direction) {
+    Car *car;
+    ID++;
+    switch (direction)
+    {
+    case 'N':
+        car->id = ID;
+        car->direction = 'N';
+        car->arrival_time[0] = Time;
+        
+        break;
+    case 'E':
+        car->id = ID;
+        car->direction = 'E';
+        car->arrival_time[0] = Time;
+        
+        break;
+    case 'S':
+        car->id = ID;
+        car->direction = 'S';
+        car->arrival_time[0] = Time; //TODO CREATE CURRENT TIMES
+        
+        break;
+    case 'W':
+        car->id = ID;
+        car->direction = 'W';
+        car->arrival_time[0] = Time;
+        
+        break;
+    
+    default:
+        
+        break;
+    }
+    return car;
+}
+
+void addCar(double p) {
+
+    //implement car struct -
+    //implement queue struct -
+    //create cars with random probability  
+
+    double Nprob = rand() % 100;
+    double Sprob = rand() % 100;
+    double Wprob = rand() % 100;
+    double Eprob = rand() % 100;
+    
+    Car *car;
+    if (Nprob >= p) 
+    {
+        car = createCar('N'); //Todo: keep track of 20 sec and add it definatly after that
+    } 
+
+    if (Sprob <= p)
+    {
+        car = createCar('S');
+    }
+    if (Wprob <= p)
+    {
+        car = createCar('W');
+    }
+    if (Eprob <= p)
+    {
+        car = createCar('E');
+    }
+    
+    
+
+}
+
+void initializeLaneQueues() {
+    //initialize queue lanes
+    Car car;
+    car.arrival_time[0] = '0';
+    car.id = '0'; //TODO : HOW TO SET ID   
+    queueN.direction = 'N';
+    enqueue(&queueN, car);
+    queueN.carCount ++;
+
+    queueS.direction = 'S';
+    car.id = '1'; //change id to use again
+    enqueue(&queueS, car);
+    queueS.carCount ++;
+    
+
+    queueE.direction = 'E';
+    car.id = '2'; //change id to use again
+    enqueue(&queueE, car);
+    queueE.carCount ++;
+
+    queueW.direction = 'W';
+    car.id = '3'; //change id to use again
+    enqueue(&queueW, car);
+    queueW.carCount ++;
+
+}
+
+
 
 int main(int argc, char const *argv[]){
     pthread_t lane_queues[4];
@@ -51,8 +157,8 @@ int main(int argc, char const *argv[]){
 
     //simulationTime
 
-    int time = 0;
-    time = atoi(argv[2]);
+    int simulationTime = 0;
+    simulationTime = atoi(argv[2]);
 
         //get probability
         double prob = 0.0;
@@ -64,6 +170,8 @@ int main(int argc, char const *argv[]){
 
         //set seed
         srand(seed);
+
+        Time = time(NULL);
 
         
 
@@ -89,4 +197,6 @@ int main(int argc, char const *argv[]){
 
     return 0;
 }
+
+
 
