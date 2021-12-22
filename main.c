@@ -1,8 +1,14 @@
 #include <stdio.h>
 #include <pthread.h>
+#include <time.h>
+#include <stdlib.h>
+#include <string.h>
 #include "pthread_sleep.c"
 #include "utils.c"
-#include <time.h>
+
+
+char* getCurrentTime();
+
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t north_pass_condition;
@@ -13,11 +19,10 @@ pthread_cond_t west_pass_condition;
 pthread_cond_t iteration_finish_condition;
 pthread_cond_t police_work_condition;
 pthread_t lane_threads[4];
-Queue queueN;
-Queue queueS;
-Queue queueE;
-Queue queueW;
-time_t Time;
+
+Queue *queues[4]; // {N, E, S, W}
+
+char currentTimeString[8];
 int ID = 0;
 
 void *lane(void* condition_ptr){
@@ -32,45 +37,34 @@ void *lane(void* condition_ptr){
 
 void *police_officer_function(){
     pthread_mutex_lock(&lock);
-    pthread_mutex_wait(&police_work_condition);
+    pthread_cond_wait(&police_work_condition, &lock);
 
     
     pthread_cond_signal(&north_pass_condition);
     pthread_mutex_unlock(&lock);
-    sleep(1);
 }
+
 Car *createCar(char direction) {
-    Car *car;
+    Car *car = (struct Car*) malloc(sizeof(Car));
+
     ID++;
-    switch (direction)
-    {
+    car->id = ID;
+    strcpy(car->arrival_time, getCurrentTime());    
+    
+    switch (direction){
     case 'N':
-        car->id = ID;
         car->direction = 'N';
-        car->arrival_time[0] = Time;
-        
         break;
     case 'E':
-        car->id = ID;
         car->direction = 'E';
-        car->arrival_time[0] = Time;
-        
         break;
     case 'S':
-        car->id = ID;
         car->direction = 'S';
-        car->arrival_time[0] = Time; //TODO CREATE CURRENT TIMES
-        
         break;
     case 'W':
-        car->id = ID;
         car->direction = 'W';
-        car->arrival_time[0] = Time;
-        
         break;
-    
     default:
-        
         break;
     }
     return car;
@@ -86,57 +80,52 @@ void addCar(double p) {
     double Sprob = rand() % 100;
     double Wprob = rand() % 100;
     double Eprob = rand() % 100;
+
+    p = p*100;
     
     Car *car;
-    if (Nprob >= p) 
+    if (Nprob > p) 
     {
-        car = createCar('N'); //Todo: keep track of 20 sec and add it definatly after that
+        enqueue(queues[0], createCar('N')); //Todo: keep track of 20 sec and add it definatly after that
     } 
 
+    if (Eprob <= p)
+    {
+        enqueue(queues[1], createCar('E'));
+    }
     if (Sprob <= p)
     {
-        car = createCar('S');
+        enqueue(queues[2], createCar('S'));
     }
     if (Wprob <= p)
     {
-        car = createCar('W');
-    }
-    if (Eprob <= p)
-    {
-        car = createCar('E');
-    }
-    
-    
+        enqueue(queues[3], createCar('W'));
+    }  
 
 }
 
 void initializeLaneQueues() {
     //initialize queue lanes
-    Car car;
-    car.arrival_time[0] = '0';
-    car.id = '0'; //TODO : HOW TO SET ID   
-    queueN.direction = 'N';
-    enqueue(&queueN, car);
-    queueN.carCount ++;
+    enqueue(queues[0], createCar('N'));
 
-    queueS.direction = 'S';
-    car.id = '1'; //change id to use again
-    enqueue(&queueS, car);
-    queueS.carCount ++;
+    enqueue(queues[1], createCar('E'));
     
+    enqueue(queues[2], createCar('S'));
 
-    queueE.direction = 'E';
-    car.id = '2'; //change id to use again
-    enqueue(&queueE, car);
-    queueE.carCount ++;
-
-    queueW.direction = 'W';
-    car.id = '3'; //change id to use again
-    enqueue(&queueW, car);
-    queueW.carCount ++;
+    enqueue(queues[3], createCar('W'));
 
 }
 
+char* getCurrentTime(){
+    time_t rawtime;
+    struct tm * timeinfo;
+
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+
+    sprintf(currentTimeString, "%d:%d:%d", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+    return currentTimeString;
+}
 
 
 int main(int argc, char const *argv[]){
@@ -158,8 +147,7 @@ int main(int argc, char const *argv[]){
 
         //set seed
         srand(seed);
-
-        Time = time(NULL);
+     
 
         
 
@@ -172,7 +160,7 @@ int main(int argc, char const *argv[]){
     pthread_cond_init(&south_pass_condition, NULL);
     pthread_cond_init(&east_pass_condition, NULL);
     pthread_cond_init(&west_pass_condition, NULL);
-
+    pthread_cond_init(&police_work_condition, NULL);
 
     pthread_create(&lane_threads[0], NULL, lane, (void *) &north_pass_condition);
     pthread_create(&lane_threads[1], NULL, lane, (void *) &west_pass_condition);
@@ -182,13 +170,13 @@ int main(int argc, char const *argv[]){
     pthread_create(&police_officer_thread, NULL, police_officer_function, NULL);
 
     int i=0;
-    while(i <= time){
-        pthread_mutex_lock(&lock);
-        pthread_cond_signal(&police_work_condition);
-        pthread_mutex_unlock(&lock);
+    while(i <= simulationTime){
+        // pthread_mutex_lock(&lock);
+        // pthread_cond_signal(&police_work_condition);
+        // pthread_mutex_unlock(&lock);
 
         i++;
-    }
+}
 
     return 0;
 }

@@ -11,7 +11,7 @@ typedef struct Car{
 } Car;
 
 typedef struct Queue{
-    Car cars[SIZE];
+    Car *cars[SIZE];
     char direction;
     int carCount;
     int front;
@@ -19,14 +19,16 @@ typedef struct Queue{
 } Queue;
 
 
-void enqueue(Queue *queue, Car car){
+void enqueue(Queue *queue, Car *car){
     queue->rear = (queue->rear + 1) % SIZE;
     queue->cars[queue->rear] = car;
+    queue->carCount++;
 }
  
-Car dequeue(Queue *queue)
+Car* dequeue(Queue *queue)
 {
-    Car car = queue->cars[queue->front];
+    Car *car = queue->cars[queue->front];
     queue->front = (queue->front + 1) % SIZE;
+    queue->carCount--;
     return car;
 }
