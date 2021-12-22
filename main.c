@@ -10,6 +10,7 @@ pthread_cond_t south_pass_condition;
 pthread_cond_t west_pass_condition;
 
 pthread_cond_t iteration_finish_condition;
+pthread_cond_t police_work_condition;
 pthread_t lane_threads[4];
 
 void *lane(void* condition_ptr){
@@ -20,27 +21,14 @@ void *lane(void* condition_ptr){
 
     pthread_cond_signal(&iteration_finish_condition);
     pthread_mutex_unlock(&lock);
-    
 }
 
 void *police_officer_function(){
     pthread_mutex_lock(&lock);
+    pthread_mutex_wait(&police_work_condition);
+
+    
     pthread_cond_signal(&north_pass_condition);
-    pthread_mutex_unlock(&lock);
-    sleep(1);
-
-    pthread_mutex_lock(&lock);
-    pthread_cond_signal(&west_pass_condition);
-    pthread_mutex_unlock(&lock);
-    sleep(1);
-
-    pthread_mutex_lock(&lock);
-    pthread_cond_signal(&south_pass_condition);
-    pthread_mutex_unlock(&lock);
-    sleep(1);
-
-    pthread_mutex_lock(&lock);
-    pthread_cond_signal(&east_pass_condition);
     pthread_mutex_unlock(&lock);
     sleep(1);
 }
@@ -79,7 +67,14 @@ int main(int argc, char const *argv[]){
 
     pthread_create(&police_officer_thread, NULL, police_officer_function, NULL);
 
-    pthread_join(police_officer_thread, NULL);
+    int i=0;
+    while(i <= time){
+        pthread_mutex_lock(&lock);
+        pthread_cond_signal(&police_work_condition);
+        pthread_mutex_unlock(&lock);
+
+        i++;
+    }
 
     return 0;
 }
