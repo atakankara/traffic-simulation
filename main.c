@@ -70,8 +70,8 @@ void *lane(void *direction){
         pthread_cond_wait(&laneConditions[i], &lock);
 
         printf("@lane i:%d", i);
-         printf("Before dequeue %d\n", queues[i]->carCount);
-         Car *car = dequeue(queues[i]);
+        printf("Before dequeue %d\n", queues[i]->carCount);
+        Car *car = dequeue(queues[i]);
          printf("After dequeue %d\n", queues[i]->carCount);
 
         // updateLogCarFile(car);
@@ -91,8 +91,6 @@ void *police_officer_function(){
     if(checkIfAllLanesEmpty()){
         printf("@police all lanes are empty\n");
         pthread_cond_signal(&iteration_finish_condition);
-        pthread_mutex_unlock(&lock);
-        return 0; //different
     }
 
     else if(checkMoreThanFiveCar()){
