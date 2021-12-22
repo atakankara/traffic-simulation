@@ -4,7 +4,7 @@
 
 In this project we created a traffic simulation. The program gets command line arguments as follows: 
 
-  # # timeLog(arg1) simulationTime(arg2) probability(arg3) seed(arg4) snapshot(arg5)
+  # ## timeLog(arg1) simulationTime(arg2) probability(arg3) seed(arg4) snapshot(arg5)
  compile main.c as follows: gcc -pthread main.c 
  run main.c as follows: ./a.out -s simulationTime(arg2) probability(arg3) seed(arg4) snapshot(arg5)
  
@@ -13,4 +13,4 @@ Where timeLog is -s. There are 4 condition variables per line and 2 additional o
 #### The logics, is that is cars are crossing a lane, other lanes wait. If in a lane a car is waiting more that 20 seconds, that lane is prioritized. if there are more than 5 cars in a lane, that lane has the next priority.
 
 
-### we implemented our own enqueue and dequeue methods in the utils file. 
+#### we implemented our own enqueue and dequeue methods in the utils file. 
