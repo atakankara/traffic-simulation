@@ -1,0 +1,12 @@
+# ninja log v5
+1	860	1640173236828706392	CMakeFiles/traffic_simulation.dir/main.c.o	9a9cc38ed87303c3
+2	847	1640173236817768929	CMakeFiles/traffic_simulation.dir/pthread_sleep.c.o	1677a4f363c3fadb
+2	188	1640173021866112354	CMakeFiles/traffic_simulation.dir/utils.c.o	ada3054a329430ef
+1	364	1640173294435509996	build.ninja	ed5c893f3719bb53
+5	256	1640173285129285161	traffic_simulation	28b43e31baf6df34
+1	567	1640173501441505943	CMakeFiles/traffic_simulation.dir/main.c.o	9a9cc38ed87303c3
+567	766	1640173501652434041	traffic_simulation	28b43e31baf6df34
+2	315	1640173596025291989	CMakeFiles/traffic_simulation.dir/main.c.o	9a9cc38ed87303c3
+316	548	1640173596278308855	traffic_simulation	28b43e31baf6df34
+6	729	1640174467485890974	CMakeFiles/traffic_simulation.dir/main.c.o	9a9cc38ed87303c3
+730	883	1640174467643827953	traffic_simulation	28b43e31baf6df34

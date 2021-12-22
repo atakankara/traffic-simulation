@@ -3,6 +3,7 @@
 #include "pthread_sleep.c"
 #include "utils.c"
 #include <time.h>
+#include <unistd.h>
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t north_pass_condition;
@@ -18,6 +19,7 @@ Queue queueE;
 Queue queueW;
 time_t Time;
 int ID = 0;
+
 
 void *lane(void* condition_ptr){
     pthread_mutex_lock(&lock);
@@ -102,7 +104,7 @@ void addCar(double p) {
     Car *car;
     if (Nprob >= p) 
     {
-        car = createCar('N'); //Todo: keep track of 20 sec and add it definatly after that
+        car = createCar('N'); //Todo: keep track of 20 sec and add it definitely after that
     } 
 
     if (Sprob <= p)
@@ -167,13 +169,27 @@ int main(int argc, char const *argv[]){
         //get seed
         int seed = 0;
         seed = atoi(argv[4]);
+        printf("%d", seed);
 
         //set seed
         srand(seed);
 
         Time = time(NULL);
+    //initialize log file
+    FILE *carLog;
+    FILE *policeLog;
+    carLog = fopen("car.log", "+w");
+    fprintf(carLog,"CarID\tDirection\tArrival-Time\tCross-Time\tWait-Time \n");
+    fprintf(carLog,"----------------------------------------------------------------------------------------------------------------");
 
-        
+    policeLog = fopen("police.log", "+w");
+    fprintf(policeLog,"Time\tEvent\n");
+    fprintf(policeLog,"---------------------------------------------------------------------------");
+
+
+
+
+
 
 
     pthread_t police_officer_thread;
