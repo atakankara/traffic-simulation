@@ -11,10 +11,7 @@ char* getCurrentTime();
 
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t north_pass_condition;
-pthread_cond_t east_pass_condition;
-pthread_cond_t south_pass_condition;
-pthread_cond_t west_pass_condition;
+pthread_cond_t laneConditions[4];
 
 pthread_cond_t iteration_finish_condition;
 pthread_cond_t police_work_condition;
@@ -22,8 +19,39 @@ pthread_t lane_threads[4];
 
 Queue *queues[4]; // {N, E, S, W}
 
+char currentLane = 'N';
+
 char currentTimeString[8];
 int ID = 0;
+
+int checkMoreThanFiveCar(){
+    for(int i=0; i<4; i++){
+        if(queues[0]->carCount >= 5){
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int checkIfAllLinesEmpty(){
+    for(int i=0; i<4; i++){
+        if(queues[0]->carCount > 0){
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int getTheMostCrowdedLane(){
+    int currentCount = 0;
+    int lane;
+    for(int i=3; i>=0; i--){
+        if(queues[i]->carCount >= currentCount){
+            lane = i;
+        }
+    }
+    return lane;
+}
 
 void *lane(void* condition_ptr){
     pthread_mutex_lock(&lock);
@@ -39,8 +67,28 @@ void *police_officer_function(){
     pthread_mutex_lock(&lock);
     pthread_cond_wait(&police_work_condition, &lock);
 
-    
-    pthread_cond_signal(&north_pass_condition);
+    if(checkIfAllLinesEmpty()){
+        pthread_mutex_unlock(&lock);
+        return;
+    }
+
+    if(checkMoreThanFiveCar()){
+        currentLane = getTheMostCrowdedLane();
+        pthread_cond_signal(&laneConditions[currentLane]);
+
+    }else if(queues[currentLane]->carCount == 0){
+        //N>E>S>W
+        for(int i=0; i<4; i++){
+            if(queues[i]->carCount != 0){
+                currentLane=i;
+                pthread_cond_signal(&laneConditions[currentLane]);
+                break;
+            }
+        }
+    }else{
+        //don't change current line
+        pthread_cond_signal(&laneConditions[currentLane]);
+    }
     pthread_mutex_unlock(&lock);
 }
 
@@ -147,35 +195,38 @@ int main(int argc, char const *argv[]){
 
         //set seed
         srand(seed);
-     
-
-        
-
 
     pthread_t police_officer_thread;
 
     /* Initialize mutex and condition variable objects */
     pthread_mutex_init(&lock, NULL);
-    pthread_cond_init(&north_pass_condition, NULL);
-    pthread_cond_init(&south_pass_condition, NULL);
-    pthread_cond_init(&east_pass_condition, NULL);
-    pthread_cond_init(&west_pass_condition, NULL);
-    pthread_cond_init(&police_work_condition, NULL);
 
-    pthread_create(&lane_threads[0], NULL, lane, (void *) &north_pass_condition);
-    pthread_create(&lane_threads[1], NULL, lane, (void *) &west_pass_condition);
-    pthread_create(&lane_threads[2], NULL, lane, (void *) &south_pass_condition);
-    pthread_create(&lane_threads[3], NULL, lane, (void *) &east_pass_condition);
+    for(int i=0; i<4; i++){
+        pthread_cond_init(&laneConditions[i], NULL);
+    }
+
+    pthread_cond_init(&police_work_condition, NULL);
+    pthread_cond_init(&iteration_finish_condition, NULL);
+
+
+
+    for(int i=0; i<4; i++){
+        pthread_create(&lane_threads[0], NULL, lane, (void *) &laneConditions[i]);
+    }
 
     pthread_create(&police_officer_thread, NULL, police_officer_function, NULL);
 
     int i=0;
     while(i <= simulationTime){
-        // pthread_mutex_lock(&lock);
-        // pthread_cond_signal(&police_work_condition);
-        // pthread_mutex_unlock(&lock);
+        pthread_mutex_lock(&lock);
+        pthread_cond_signal(&police_work_condition);
+        pthread_mutex_unlock(&lock);
 
+        pthread_mutex_lock(&lock);
+        pthread_cond_wait(&iteration_finish_condition, &lock);
+        addCar(prob);
         i++;
+        printf("On iteration %d\n", i);
 }
 
     return 0;
