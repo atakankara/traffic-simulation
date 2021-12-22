@@ -74,7 +74,7 @@ void *lane(void *direction){
         Car *car = dequeue(queues[i]);
         strcpy(car->cross_time, getCurrentTime());
         updateLogCarFile(car);
-        printf("DEQUEUE'S")
+//        printf("DEQUEUE'S")
          printf("After dequeue %d\n", queues[i]->carCount);
 
         // updateLogCarFile(car);
