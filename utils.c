@@ -8,6 +8,7 @@ typedef struct Car{
     char direction;
     char arrival_time[8];
     char cross_time[8];
+    char wait_time[8];
 } Car;
 
 typedef struct Queue{
