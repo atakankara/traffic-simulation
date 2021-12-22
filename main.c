@@ -150,7 +150,7 @@ void *police_officer_function(){
     if (cell_phone_delay != 0){
         printf("sleeping, cell_phone_delay:%d\n", cell_phone_delay);
         currentLane = getTheMostCrowdedLane();
-        pthread_cond_signal(currentLane);
+        pthread_cond_signal(&laneConditions[currentLane]);
         pthread_cond_wait(&horn_condition, &lock);
         cell_phone_delay--;
     }else {
