@@ -73,7 +73,6 @@ void *lane(void *direction){
     while(1){
         pthread_cond_wait(&laneConditions[i], &lock);
 
-<<<<<<< HEAD
         if(cell_phone_delay !=0){
             pthread_cond_signal(&horn_condition);
             updateLogPoliceFile("Honk");
@@ -84,16 +83,6 @@ void *lane(void *direction){
             strcpy(car->cross_time, getCurrentTime());
             updateLogCarFile(car);
         }
-=======
-        printf("@lane i:%d", i);
-        printf("Before dequeue %d\n", queues[i]->carCount);
-        Car *car = dequeue(queues[i]);
-        pthread_sleep(1);
-        strcpy(car->cross_time, getCurrentTime());
-        updateLogCarFile(car);
-//        printf("DEQUEUE'S")
-         printf("After dequeue %d\n", queues[i]->carCount);
->>>>>>> 7f70811b1850dd207ca6b0c73ec1dbdbc495ff99
 
         // updateLogCarFile(car);
         pthread_cond_signal(&iteration_finish_condition);
@@ -158,7 +147,6 @@ void *police_officer_function(){
         pthread_cond_signal(&iteration_finish_condition);
     }
 
-<<<<<<< HEAD
     if (cell_phone_delay != 0){
         printf("sleeping, cell_phone_delay:%d\n", cell_phone_delay);
         currentLane = getTheMostCrowdedLane();
@@ -167,10 +155,6 @@ void *police_officer_function(){
         cell_phone_delay--;
     }else {
         int delayedLane = checkCarsWaitTime();
-=======
-
-    int delayedLane = checkCarsWaitTime();
->>>>>>> 7f70811b1850dd207ca6b0c73ec1dbdbc495ff99
         if (delayedLane != -1) {
             checkCarsWaitTime();
             currentLane = delayedLane;
