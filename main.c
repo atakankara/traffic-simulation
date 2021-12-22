@@ -170,7 +170,24 @@ void initializeLaneQueues() {
     //initialize queue lanes
     for(int i = 0; i < 4; i++){
         queues[i] = (struct Queue*) malloc(sizeof(Queue));
+        // {N, E, S, W}
+        switch (i) {
+            case 0:
+                queues[i]->direction = 'N';
+                break;
+            case 1:
+                queues[i]->direction = 'E';
+                break;
+            case 2:
+                queues[i]->direction = 'S';
+                break;
+            case 3:
+                queues[i]->direction = 'W';
+                break;
+        }
     }
+
+
 
     //at t=0 all lanes have a car
     enqueue(queues[0], createCar('N'));
@@ -182,6 +199,36 @@ void initializeLaneQueues() {
     enqueue(queues[3], createCar('W'));
 
 }
+int getWaitTime(Car *car){
+    int waitTime = 0;
+    char delim[] = ":";
+
+    int arrival_h = atoi(strtok(car->arrival_time, delim));
+    int arrival_m = atoi(strtok(NULL, delim));
+    int arrival_s = atoi(strtok(NULL, delim));
+
+    int cross_h = atoi(strtok(car->cross_time, delim));
+    int cross_m = atoi(strtok(NULL, delim));
+    int cross_s = atoi(strtok(NULL, delim));
+
+    int h = cross_h - arrival_h;
+    int m = cross_m - arrival_m;
+    int s = cross_s - arrival_s;
+
+    waitTime = h * 3600 + m * 60 + s;
+
+    return waitTime;
+}
+
+void updateLogCarFile(Car *car){
+    //Add car to log file //CarID Direction Arrival-Time Cross-Time Wait-Time
+    char logMsg[100];
+    sprintf(logMsg, "%d\t%c\t%s\t%s\t%d", car->id, car->direction, car->arrival_time, car->cross_time, getWaitTime(car));
+    fprintf(carLog, "%s", logMsg);
+}
+//void updateLogPoliceFile(){
+//
+//}
 
 char* getCurrentTime(){
     time_t rawtime;
