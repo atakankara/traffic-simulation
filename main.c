@@ -55,9 +55,44 @@ int getTheMostCrowdedLane(){
     }
     return lane;
 }
+int getQueueWaitTime(Car *car) {
+    int waitTime = 0;
+    char delim[] = ":";
+
+    int arrival_h = atoi(strtok(car->arrival_time, delim));
+    int arrival_m = atoi(strtok(NULL, delim));
+    int arrival_s = atoi(strtok(NULL, delim));
+
+    char time [8];
+    strcpy(time, getCurrentTime());
+    int wait_h = atoi(strtok(time, delim));
+    int wait_m = atoi(strtok(NULL, delim));
+    int wait_s = atoi(strtok(NULL, delim));
+
+    int h = wait_h - arrival_h;
+    int m = wait_m - arrival_m;
+    int s = wait_s - arrival_s;
+
+    waitTime = h * 3600 + m * 60 + s;
+
+    return waitTime;
+}
+
+int checkCarsWaitTime() {
+
+    for(int i=0; i<4; i++){
+        for(int j = 0; j< queues[i]->carCount; j++){
+            int d = getQueueWaitTime(queues[i]->cars[j]);
+            if (d >= 20) {
+                return i;
+            }
+        }
+    }
+    return -1;
+}
 
 void *lane(void* condition_ptr){
-    printf("At the begining of lane\n");
+    printf("At the beginning of lane\n");
     while(1){
         pthread_mutex_lock(&lock);
         pthread_cond_wait(condition_ptr, &lock);
@@ -70,7 +105,7 @@ void *lane(void* condition_ptr){
 }
 
 void *police_officer_function(){
-    printf("At the begining of police\n");
+    printf("At the beginning of police\n");
     while(1){
 
     pthread_mutex_lock(&lock);
@@ -83,8 +118,13 @@ void *police_officer_function(){
         pthread_mutex_unlock(&lock);
         return 0;
     }
+    int delayedLane = checkCarsWaitTime();
+    if (delayedLane != -1) {
+            currentLane = delayedLane;
+            pthread_cond_signal(&laneConditions[currentLane]);
+    }
 
-    if(checkMoreThanFiveCar()){
+    else if(checkMoreThanFiveCar()){
         printf("@police there are more than 5 cars\n");
         currentLane = getTheMostCrowdedLane();
         pthread_cond_signal(&laneConditions[currentLane]);
@@ -104,13 +144,13 @@ void *police_officer_function(){
         printf("@police don't change line \n");
         pthread_cond_signal(&laneConditions[currentLane]);
     }
+
     }
     pthread_mutex_unlock(&lock);
 }
 
 Car *createCar(char direction) {
     Car *car = (struct Car*) malloc(sizeof(Car));
-
     ID++;
     car->id = ID;
     strcpy(car->arrival_time, getCurrentTime());
@@ -222,7 +262,7 @@ int getWaitTime(Car *car){
     return waitTime;
 }
 
-void updateLogCarFile(Car *car){
+void updateCarLogFile(Car *car){
     //Add car to log file //CarID Direction Arrival-Time Cross-Time Wait-Time
     char logMsg[100];
     sprintf(logMsg, "%d\t%c\t%s\t%s\t%d", car->id, car->direction, car->arrival_time, car->cross_time, getWaitTime(car));
@@ -241,6 +281,23 @@ char* getCurrentTime(){
 
     sprintf(currentTimeString, "%d:%d:%d", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
     return currentTimeString;
+}
+
+void initializeLogFiles(){
+    //initialize log file
+
+    carLog = fopen("car.log", "w");
+    policeLog = fopen("police.log", "w");
+    if(carLog == NULL && policeLog == NULL)
+    {
+        perror("Program crashed.\n");
+        exit(1);
+    }
+    fprintf(carLog,"CarID\tDirection\tArrival-Time\tCross-Time\tWait-Time \n");
+    fprintf(carLog,"----------------------------------------------------------------------------------------------------------------\n");
+
+    fprintf(policeLog,"Time\tEvent\n");
+    fprintf(policeLog,"-----------------------------------------------------------------------------------------------\n");
 }
 
 
@@ -263,21 +320,8 @@ int main(int argc, char const *argv[]){
 
         //set seed
         srand(seed);
-    //initialize log file
 
-    carLog = fopen("car.log", "w");
-    policeLog = fopen("police.log", "w");
-    if(carLog == NULL && policeLog == NULL)
-    {
-        perror("Program crashed.\n");
-        exit(1);
-    }
-    fprintf(carLog,"CarID\tDirection\tArrival-Time\tCross-Time\tWait-Time \n");
-    fprintf(carLog,"----------------------------------------------------------------------------------------------------------------\n");
-
-    fprintf(policeLog,"Time\tEvent\n");
-    fprintf(policeLog,"-----------------------------------------------------------------------------------------------\n");
-
+    initializeLogFiles();
     initializeLaneQueues();
     printf("Size of the first queue:%d\n", queues[0]->carCount);
 
@@ -305,7 +349,7 @@ int main(int argc, char const *argv[]){
 
     int i=0;
     while(i <= simulationTime){
-        printf("At the begining of the iteration %d\n", i);
+        printf("At the beginning of the iteration %d\n", i);
 
         pthread_mutex_lock(&lock);
         printf("@main got the lock\n");
