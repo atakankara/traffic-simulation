@@ -3,6 +3,7 @@
 #include <time.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "pthread_sleep.c"
 #include "utils.c"
 
@@ -61,6 +62,7 @@ void *lane(void* condition_ptr){
 
     pthread_cond_signal(&iteration_finish_condition);
     pthread_mutex_unlock(&lock);
+    
 }
 
 void *police_officer_function(){
@@ -90,6 +92,7 @@ void *police_officer_function(){
         pthread_cond_signal(&laneConditions[currentLane]);
     }
     pthread_mutex_unlock(&lock);
+
 }
 
 Car *createCar(char direction) {
@@ -97,8 +100,8 @@ Car *createCar(char direction) {
 
     ID++;
     car->id = ID;
-    strcpy(car->arrival_time, getCurrentTime());    
-    
+    strcpy(car->arrival_time, getCurrentTime());
+
     switch (direction){
     case 'N':
         car->direction = 'N';
@@ -130,9 +133,9 @@ void addCar(double p) {
     double Eprob = rand() % 100;
 
     p = p*100;
-    
+
     Car *car;
-    if (Nprob > p) 
+    if (Nprob > p)
     {
         enqueue(queues[0], createCar('N')); //Todo: keep track of 20 sec and add it definatly after that
     } 
@@ -148,12 +151,17 @@ void addCar(double p) {
     if (Wprob <= p)
     {
         enqueue(queues[3], createCar('W'));
-    }  
+    }
 
 }
 
 void initializeLaneQueues() {
     //initialize queue lanes
+    for(int i = 0; i < 4; i++){
+        queues[i] = (struct Queue*) malloc(sizeof(Queue));
+    }
+
+    //at t=0 all lanes have a car
     enqueue(queues[0], createCar('N'));
 
     enqueue(queues[1], createCar('E'));
@@ -195,6 +203,23 @@ int main(int argc, char const *argv[]){
 
         //set seed
         srand(seed);
+    //initialize log file
+    FILE *carLog;
+    FILE *policeLog;
+    carLog = fopen("car.log", "w");
+    policeLog = fopen("police.log", "w");
+    if(carLog == NULL && policeLog == NULL)
+    {
+        perror("Program crashed.\n");
+        exit(1);
+    }
+    fprintf(carLog,"CarID\tDirection\tArrival-Time\tCross-Time\tWait-Time \n");
+    fprintf(carLog,"----------------------------------------------------------------------------------------------------------------\n");
+
+    fprintf(policeLog,"Time\tEvent\n");
+    fprintf(policeLog,"-----------------------------------------------------------------------------------------------\n");
+
+
 
     pthread_t police_officer_thread;
 
