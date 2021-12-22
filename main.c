@@ -228,9 +228,9 @@ void updateLogCarFile(Car *car){
     sprintf(logMsg, "%d\t%c\t%s\t%s\t%d", car->id, car->direction, car->arrival_time, car->cross_time, getWaitTime(car));
     fprintf(carLog, "%s", logMsg);
 }
-void updateLogPoliceFile(){
-
-}
+//void updateLogPoliceFile(){
+//
+//}
 
 char* getCurrentTime(){
     time_t rawtime;
